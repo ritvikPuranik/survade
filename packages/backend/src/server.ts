@@ -1,6 +1,7 @@
 import express, { type Request, type Response } from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import surveyRoutes from './routes/surveys.js'
 
 // Load environment variables
 dotenv.config()
@@ -20,6 +21,9 @@ app.get('/api/health', (_req: Request, res: Response) => {
     timestamp: new Date().toISOString()
   })
 })
+
+// API routes
+app.use('/api/surveys', surveyRoutes)
 
 // API routes placeholder
 app.get('/api', (_req: Request, res: Response) => {

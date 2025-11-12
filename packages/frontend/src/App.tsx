@@ -3,6 +3,8 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { LoginPage } from './pages/LoginPage'
 import { AuthCallback } from './pages/AuthCallback'
 import { SurveysPage } from './pages/SurveysPage'
+import { CreateSurveyPage } from './pages/CreateSurveyPage'
+import { ReviewSurveyPage } from './pages/ReviewSurveyPage'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
 function RootRedirect() {
@@ -32,6 +34,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <SurveysPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/surveys/new"
+            element={
+              <ProtectedRoute>
+                <CreateSurveyPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/surveys/:id/review"
+            element={
+              <ProtectedRoute>
+                <ReviewSurveyPage />
               </ProtectedRoute>
             }
           />
