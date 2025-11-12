@@ -1,6 +1,6 @@
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { api } from '../lib/api'
 
 interface Survey {
@@ -16,9 +16,38 @@ export function SurveysPage() {
   const navigate = useNavigate()
   const [surveys, setSurveys] = useState<Survey[]>([])
   const [loading, setLoading] = useState(true)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Helper function to get user's first name
+  const getFirstName = () => {
+    const fullName = user?.user_metadata?.full_name || user?.user_metadata?.name
+    if (fullName) {
+      return fullName.split(' ')[0]
+    }
+    return user?.email?.split('@')[0] || 'there'
+  }
+
+  // Helper function to get profile photo
+  const getProfilePhoto = () => {
+    return user?.user_metadata?.avatar_url || user?.user_metadata?.picture
+  }
 
   useEffect(() => {
     fetchSurveys()
+  }, [])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   const fetchSurveys = async () => {
@@ -35,6 +64,7 @@ export function SurveysPage() {
   }
 
   const handleSignOut = async () => {
+    setIsDropdownOpen(false)
     await signOut()
     navigate('/login')
   }
@@ -46,14 +76,90 @@ export function SurveysPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Survade</h1>
-            <p className="text-sm text-gray-600">Welcome back, {user?.email}</p>
+            <p className="text-sm text-gray-600">Welcome back, {getFirstName()}!</p>
           </div>
-          <button
-            onClick={handleSignOut}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-          >
-            Sign Out
-          </button>
+
+          {/* Account Menu */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center gap-2 px-2 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition-colors"
+            >
+              {getProfilePhoto() ? (
+                <img
+                  src={getProfilePhoto()}
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                  <span className="text-indigo-600 font-semibold text-sm">
+                    {getFirstName().charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
+              <svg
+                className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+
+            {/* Dropdown Menu */}
+            {isDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-10">
+                <button
+                  onClick={() => {
+                    setIsDropdownOpen(false)
+                    setIsModalOpen(true)
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  Account Info
+                </button>
+                <button
+                  onClick={handleSignOut}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                    />
+                  </svg>
+                  Sign Out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -162,35 +268,78 @@ export function SurveysPage() {
               Analytics dashboard coming soon...
             </p>
           </div>
+        </div>
+      </main>
 
-          {/* User Info Card */}
-          <div className="mt-8 border-t pt-8">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              Account Information
-            </h3>
-            <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Email:</span>
-                <span className="text-sm font-medium text-gray-900">
-                  {user?.email}
-                </span>
+      {/* Account Info Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-bold text-gray-900">Account Information</h2>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              {/* Profile Photo and Name */}
+              <div className="flex items-center gap-4 pb-4 border-b">
+                {getProfilePhoto() ? (
+                  <img
+                    src={getProfilePhoto()}
+                    alt="Profile"
+                    className="w-16 h-16 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center">
+                    <span className="text-indigo-600 font-bold text-2xl">
+                      {getFirstName().charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {user?.user_metadata?.full_name || user?.user_metadata?.name || 'User'}
+                  </h3>
+                  <p className="text-sm text-gray-600">{user?.email}</p>
+                  <p className="text-sm text-gray-600">
+                    Joined on {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}
+                  </p>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">User ID:</span>
-                <span className="text-sm font-mono text-gray-900">
-                  {user?.id}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Provider:</span>
-                <span className="text-sm font-medium text-gray-900">
-                  {user?.app_metadata.provider || 'Google'}
-                </span>
-              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex justify-end p-6 border-t">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
-      </main>
+      )}
     </div>
   )
 }
