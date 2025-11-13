@@ -36,6 +36,28 @@ export const api = {
     return response.json()
   },
 
+  updateSurvey: async (
+    id: string,
+    data: {
+      title: string
+      description?: string
+      objective?: string
+      questions: Array<{
+        text: string
+        type: string
+        options?: string[]
+        required: boolean
+      }>
+    }
+  ) => {
+    const response = await fetch(`${API_BASE}/surveys/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    return response.json()
+  },
+
   publishSurvey: async (id: string) => {
     const response = await fetch(`${API_BASE}/surveys/${id}/review`, {
       method: 'POST',

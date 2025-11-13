@@ -1,27 +1,32 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { Sparkles } from 'lucide-react'
 import { api } from '../lib/api'
-
-interface Survey {
-  id: string
-  title: string
-  description: string
-  objective?: string
-  status: string
-  questions?: Array<{
-    text: string
-    type: string
-    options?: string[]
-    required: boolean
-  }>
-}
+import { RefinedSurvey, RefinedQuestion, Question } from '../types/survey'
+import { SurveyOverview } from '../components/survey-builder/SurveyOverview'
+import { QuestionCard } from '../components/survey-builder/QuestionCard'
+import { AddQuestionButton } from '../components/survey-builder/AddQuestionButton'
+import { RefinementBadge } from '../components/survey-builder/RefinementBadge'
+import { ComparisonToggle } from '../components/survey-builder/ComparisonToggle'
+import { OriginalQuestionCard } from '../components/survey-builder/OriginalQuestionCard'
 
 export function ReviewSurveyPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [survey, setSurvey] = useState<Survey | null>(null)
+
+  // Survey data from API
+  const [survey, setSurvey] = useState<RefinedSurvey | null>(null)
+
+  // Editable form state (local changes)
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [objective, setObjective] = useState('')
+  const [questions, setQuestions] = useState<RefinedQuestion[]>([])
+
+  // UI state
   const [loading, setLoading] = useState(true)
   const [publishing, setPublishing] = useState(false)
+  const [showComparison, setShowComparison] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -33,7 +38,18 @@ export function ReviewSurveyPage() {
     try {
       const response = await api.getSurveyForReview(id!)
       if (response.success) {
-        setSurvey(response.data)
+        const surveyData: RefinedSurvey = response.data
+        setSurvey(surveyData)
+
+        // Initialize editable state
+        setTitle(surveyData.title)
+        setDescription(surveyData.description)
+        setObjective(surveyData.objective)
+        setQuestions(surveyData.questions.map((q, idx) => ({
+          ...q,
+          id: q.id || crypto.randomUUID(),
+          order: idx,
+        })))
       }
     } catch (error) {
       console.error('Failed to fetch survey:', error)
@@ -42,11 +58,93 @@ export function ReviewSurveyPage() {
     }
   }
 
+  // CRUD operations for questions
+  const addQuestion = () => {
+    const newQuestion: RefinedQuestion = {
+      id: crypto.randomUUID(),
+      text: '',
+      type: 'multiple_choice',
+      options: ['Option 1', 'Option 2'],
+      required: true,
+      order: questions.length,
+    }
+    setQuestions([...questions, newQuestion])
+  }
+
+  const updateQuestion = (id: string, updates: Partial<RefinedQuestion>) => {
+    setQuestions(
+      questions.map((q) => (q.id === id ? { ...q, ...updates } : q))
+    )
+  }
+
+  const deleteQuestion = (id: string) => {
+    if (questions.length > 1) {
+      setQuestions(questions.filter((q) => q.id !== id))
+    }
+  }
+
+  const duplicateQuestion = (id: string) => {
+    const questionToDuplicate = questions.find((q) => q.id === id)
+    if (questionToDuplicate) {
+      const duplicated: RefinedQuestion = {
+        ...questionToDuplicate,
+        id: crypto.randomUUID(),
+        order: questions.length,
+        refinement: undefined, // Remove refinement badge from duplicated question
+      }
+      setQuestions([...questions, duplicated])
+    }
+  }
+
+  // Validation
+  const validateForm = (): string | null => {
+    if (!title.trim()) {
+      return 'Survey title is required'
+    }
+
+    if (questions.length === 0) {
+      return 'At least one question is required'
+    }
+
+    for (const question of questions) {
+      if (!question.text.trim()) {
+        return 'All questions must have text'
+      }
+
+      if (question.type === 'multiple_choice') {
+        if (!question.options || question.options.length < 2) {
+          return 'Multiple choice questions must have at least 2 options'
+        }
+        if (question.options.some((opt) => !opt.trim())) {
+          return 'All options must have text'
+        }
+      }
+    }
+
+    return null
+  }
+
+  // Handle publish (saves + publishes)
   const handlePublish = async () => {
     if (!id) return
 
+    const validationError = validateForm()
+    if (validationError) {
+      alert(validationError)
+      return
+    }
+
     setPublishing(true)
     try {
+      // First update the survey with current changes
+      await api.updateSurvey(id, {
+        title,
+        description,
+        objective,
+        questions: questions.map(({ id, order, refinement, ...rest }) => rest),
+      })
+
+      // Then publish it
       const response = await api.publishSurvey(id)
       if (response.success) {
         alert('Survey published successfully!')
@@ -58,6 +156,30 @@ export function ReviewSurveyPage() {
     } finally {
       setPublishing(false)
     }
+  }
+
+  // Handle discard
+  const handleDiscard = () => {
+    if (survey) {
+      setTitle(survey.title)
+      setDescription(survey.description)
+      setObjective(survey.objective)
+      setQuestions(survey.questions.map((q, idx) => ({
+        ...q,
+        id: q.id || crypto.randomUUID(),
+        order: idx,
+      })))
+    }
+  }
+
+  // Find original question for comparison
+  const findOriginalQuestion = (currentIndex: number): Question | undefined => {
+    if (!survey?.original_questions) return undefined
+
+    const currentQuestion = questions[currentIndex]
+    if (!currentQuestion.refinement?.originalIndex) return undefined
+
+    return survey.original_questions[currentQuestion.refinement.originalIndex]
   }
 
   if (loading) {
@@ -93,10 +215,18 @@ export function ReviewSurveyPage() {
     <div className="page-gradient min-h-screen">
       {/* Header */}
       <header className="page-header">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">Review Survey</h1>
-            <span className="badge-warning">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Review & Refine Survey</h1>
+              {survey.is_refined && (
+                <div className="flex items-center gap-2 mt-1">
+                  <Sparkles className="w-4 h-4 text-indigo-600" />
+                  <span className="text-sm text-indigo-600 font-medium">AI-Enhanced</span>
+                </div>
+              )}
+            </div>
+            <span className="px-3 py-1 text-sm font-medium bg-yellow-100 text-yellow-800 rounded">
               {survey.status}
             </span>
           </div>
@@ -104,99 +234,78 @@ export function ReviewSurveyPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="card-gradient backdrop-blur-sm bg-gradient-to-br from-white/90 via-blue-50/50 to-white/90 shadow-strong border border-white/50 rounded-2xl p-8">
-          {/* Survey Preview */}
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              {survey.title}
-            </h2>
-            {survey.description && (
-              <p className="text-gray-600 mb-2">{survey.description}</p>
-            )}
-            {survey.objective && (
-              <p className="text-sm text-gray-500 italic mb-6">
-                Objective: {survey.objective}
-              </p>
-            )}
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <form className="space-y-6">
+          {/* Comparison Toggle */}
+          {survey.is_refined && survey.original_questions && (
+            <div className="flex justify-end">
+              <ComparisonToggle
+                showComparison={showComparison}
+                onToggle={() => setShowComparison(!showComparison)}
+              />
+            </div>
+          )}
 
-            {/* Questions Preview */}
-            {survey.questions && survey.questions.length > 0 && (
-              <div className="space-y-6 mt-8">
-                <h3 className="text-xl font-semibold text-gray-900">
-                  Questions
-                </h3>
-                {survey.questions.map((question, index) => (
-                  <div
-                    key={index}
-                    className="p-6 bg-gray-50 rounded-lg border border-gray-200"
-                  >
-                    <div className="flex items-start gap-3 mb-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-semibold text-sm">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900 text-lg">
-                          {question.text}
-                          {question.required && (
-                            <span className="text-red-500 ml-1">*</span>
-                          )}
-                        </p>
-                        <p className="text-sm text-gray-500 mt-1">
-                          Type: {question.type.replace('_', ' ')}
-                        </p>
-                      </div>
-                    </div>
+          {/* Survey Overview Section */}
+          <SurveyOverview
+            title={title}
+            description={description}
+            objective={objective}
+            onTitleChange={setTitle}
+            onDescriptionChange={setDescription}
+            onObjectiveChange={setObjective}
+          />
 
-                    {/* Display question options based on type */}
+          {/* Questions Section */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-gray-900">Questions</h2>
+
+            {questions.map((question, index) => (
+              <div key={question.id} className="space-y-3">
+                {/* Refined Question Card with Badge */}
+                <div className="space-y-2">
+                  <QuestionCard
+                    question={question}
+                    questionNumber={index + 1}
+                    onUpdate={(updates) => updateQuestion(question.id, updates)}
+                    onDelete={() => deleteQuestion(question.id)}
+                    onDuplicate={() => duplicateQuestion(question.id)}
+                  />
+
+                  {/* Refinement Badge (if refined) */}
+                  {question.refinement && (
                     <div className="ml-11">
-                      {question.type === 'multiple_choice' && question.options && (
-                        <div className="space-y-2">
-                          {question.options.map((option, optIndex) => (
-                            <div key={optIndex} className="flex items-center gap-3">
-                              <div className="w-5 h-5 rounded-full border-2 border-gray-400"></div>
-                              <span className="text-gray-700">{option}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {question.type === 'descriptive' && (
-                        <div className="p-4 bg-white rounded border border-gray-300">
-                          <p className="text-sm text-gray-400 italic">
-                            Long answer text area
-                          </p>
-                        </div>
-                      )}
-
-                      {question.type === 'yes_no' && (
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-3">
-                            <div className="w-5 h-5 rounded-full border-2 border-gray-400"></div>
-                            <span className="text-gray-700">Yes</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="w-5 h-5 rounded-full border-2 border-gray-400"></div>
-                            <span className="text-gray-700">No</span>
-                          </div>
-                        </div>
-                      )}
+                      <RefinementBadge refinement={question.refinement} />
                     </div>
+                  )}
+                </div>
+
+                {/* Original Question (if comparison mode is on) */}
+                {showComparison && findOriginalQuestion(index) && (
+                  <div className="ml-11">
+                    <OriginalQuestionCard
+                      question={findOriginalQuestion(index)!}
+                      questionNumber={index + 1}
+                    />
                   </div>
-                ))}
+                )}
               </div>
-            )}
+            ))}
+
+            <AddQuestionButton onClick={addQuestion} />
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-4 pt-6 border-t">
+          <div className="flex gap-4 pt-6">
             <button
-              onClick={() => navigate('/surveys/new')}
+              type="button"
+              onClick={handleDiscard}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
             >
-              Back to Edit
+              Discard Changes
             </button>
             <button
+              type="button"
               onClick={handlePublish}
               disabled={publishing}
               className="flex-1 px-4 py-2 border border-transparent rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -222,12 +331,12 @@ export function ReviewSurveyPage() {
                 />
               </svg>
               <p className="text-sm text-green-700">
-                Publishing this survey will make it active and available for
-                responses. You can always edit or archive it later.
+                Publishing this survey will make it active and available for responses.
+                Changes will be saved automatically when you publish.
               </p>
             </div>
           </div>
-        </div>
+        </form>
       </main>
     </div>
   )

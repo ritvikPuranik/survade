@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express'
+import { refineSurveyWithLLM } from '../services/llm-refinement'
 
 const router = express.Router()
 
@@ -37,16 +38,21 @@ router.get('/', (req: Request, res: Response) => {
   })
 })
 
-// POST /api/surveys/new - Create new survey
+// POST /api/surveys/new - Create new survey with LLM refinement
 router.post('/new', (req: Request, res: Response) => {
   const { title, description, objective, questions } = req.body
 
+  // Run LLM refinement on the survey
+  const refinedSurvey = refineSurveyWithLLM({
+    title: title || 'Untitled Survey',
+    description,
+    objective,
+    questions: questions || [],
+  })
+
   const newSurvey = {
     id: String(Date.now()),
-    title: title || 'Untitled Survey',
-    description: description || '',
-    objective: objective || '',
-    questions: questions || [],
+    ...refinedSurvey,
     status: 'review',
     created_at: new Date().toISOString(),
   }
@@ -106,17 +112,82 @@ router.get('/:id/review', (req: Request, res: Response) => {
   })
 })
 
+// PUT /api/surveys/:id - Update existing survey
+router.put('/:id', (req: Request, res: Response) => {
+  const { id } = req.params
+  const { title, description, objective, questions } = req.body
+
+  const survey = createdSurveys.get(id)
+
+  if (!survey) {
+    res.status(404).json({
+      success: false,
+      error: 'Survey not found',
+    })
+    return
+  }
+
+  // Only allow updates if status is 'review'
+  if (survey.status !== 'review') {
+    res.status(400).json({
+      success: false,
+      error: 'Can only update surveys in review status',
+    })
+    return
+  }
+
+  const updatedSurvey = {
+    ...survey,
+    title: title ?? survey.title,
+    description: description ?? survey.description,
+    objective: objective ?? survey.objective,
+    questions: questions ?? survey.questions,
+    updated_at: new Date().toISOString(),
+  }
+
+  createdSurveys.set(id, updatedSurvey)
+
+  res.json({
+    success: true,
+    data: updatedSurvey,
+  })
+})
+
 // POST /api/surveys/:id/review - Publish survey
 router.post('/:id/review', (req: Request, res: Response) => {
   const { id } = req.params
 
+  const survey = createdSurveys.get(id)
+
+  if (!survey) {
+    res.status(404).json({
+      success: false,
+      error: 'Survey not found',
+    })
+    return
+  }
+
+  if (survey.status !== 'review') {
+    res.status(400).json({
+      success: false,
+      error: 'Survey must be in review status to publish',
+    })
+    return
+  }
+
+  // Update status to active
+  const publishedSurvey = {
+    ...survey,
+    status: 'active',
+    published_at: new Date().toISOString(),
+  }
+
+  createdSurveys.set(id, publishedSurvey)
+
   res.json({
     success: true,
     message: 'Survey published successfully',
-    data: {
-      id,
-      status: 'active',
-    },
+    data: publishedSurvey,
   })
 })
 
