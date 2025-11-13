@@ -54,7 +54,9 @@ export function SurveysPage() {
     try {
       const response = await api.getSurveys()
       if (response.success) {
-        setSurveys(response.data)
+        // Ensure data is an array
+        const surveysData = Array.isArray(response.data) ? response.data : []
+        setSurveys(surveysData)
       }
     } catch (error) {
       console.error('Failed to fetch surveys:', error)
@@ -205,9 +207,9 @@ export function SurveysPage() {
               <p className="mt-4 text-gray-600">Loading surveys...</p>
             </div>
           ) : surveys.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-16">
               <svg
-                className="mx-auto h-12 w-12 text-gray-400"
+                className="mx-auto h-24 w-24 text-gray-300"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -215,16 +217,35 @@ export function SurveysPage() {
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
+                  strokeWidth={1.5}
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900">
-                No surveys yet
+              <h3 className="mt-6 text-xl font-semibold text-gray-900">
+                No activity yet
               </h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-2 text-sm text-gray-500 mb-6">
                 Get started by creating your first survey
               </p>
+              <button
+                onClick={() => navigate('/surveys/new')}
+                className="inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+              >
+                <svg
+                  className="-ml-1 mr-3 h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Create Your First Survey
+              </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

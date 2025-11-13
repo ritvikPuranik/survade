@@ -12,7 +12,17 @@ export const api = {
     return response.json()
   },
 
-  createSurvey: async (data: { title: string; description?: string }) => {
+  createSurvey: async (data: {
+    title: string
+    description?: string
+    objective?: string
+    questions: Array<{
+      text: string
+      type: string
+      options?: string[]
+      required: boolean
+    }>
+  }) => {
     const response = await fetch(`${API_BASE}/surveys/new`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

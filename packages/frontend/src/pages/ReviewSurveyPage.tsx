@@ -6,11 +6,13 @@ interface Survey {
   id: string
   title: string
   description: string
+  objective?: string
   status: string
   questions?: Array<{
-    id: string
     text: string
     type: string
+    options?: string[]
+    required: boolean
   }>
 }
 
@@ -109,25 +111,77 @@ export function ReviewSurveyPage() {
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
               {survey.title}
             </h2>
-            <p className="text-gray-600 mb-6">{survey.description}</p>
+            {survey.description && (
+              <p className="text-gray-600 mb-2">{survey.description}</p>
+            )}
+            {survey.objective && (
+              <p className="text-sm text-gray-500 italic mb-6">
+                Objective: {survey.objective}
+              </p>
+            )}
 
             {/* Questions Preview */}
             {survey.questions && survey.questions.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Questions:
+              <div className="space-y-6 mt-8">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Questions
                 </h3>
                 {survey.questions.map((question, index) => (
                   <div
-                    key={question.id}
-                    className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+                    key={index}
+                    className="p-6 bg-gray-50 rounded-lg border border-gray-200"
                   >
-                    <p className="font-medium text-gray-900">
-                      {index + 1}. {question.text}
-                    </p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Type: {question.type}
-                    </p>
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-semibold text-sm">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900 text-lg">
+                          {question.text}
+                          {question.required && (
+                            <span className="text-red-500 ml-1">*</span>
+                          )}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Type: {question.type.replace('_', ' ')}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Display question options based on type */}
+                    <div className="ml-11">
+                      {question.type === 'multiple_choice' && question.options && (
+                        <div className="space-y-2">
+                          {question.options.map((option, optIndex) => (
+                            <div key={optIndex} className="flex items-center gap-3">
+                              <div className="w-5 h-5 rounded-full border-2 border-gray-400"></div>
+                              <span className="text-gray-700">{option}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {question.type === 'descriptive' && (
+                        <div className="p-4 bg-white rounded border border-gray-300">
+                          <p className="text-sm text-gray-400 italic">
+                            Long answer text area
+                          </p>
+                        </div>
+                      )}
+
+                      {question.type === 'yes_no' && (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-5 h-5 rounded-full border-2 border-gray-400"></div>
+                            <span className="text-gray-700">Yes</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="w-5 h-5 rounded-full border-2 border-gray-400"></div>
+                            <span className="text-gray-700">No</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
