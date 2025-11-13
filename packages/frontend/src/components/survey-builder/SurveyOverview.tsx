@@ -1,3 +1,5 @@
+import { Input, Textarea, H3, TextSmall, Card } from '../ui'
+
 interface SurveyOverviewProps {
   title: string
   description: string
@@ -16,59 +18,49 @@ export function SurveyOverview({
   onObjectiveChange,
 }: SurveyOverviewProps) {
   return (
-    <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Survey Overview</h2>
-        <p className="text-sm text-gray-600">
+    <Card variant="elevated" padding="md">
+      <div className="mb-6">
+        <H3 className="mb-2">Survey Overview</H3>
+        <TextSmall>
           Provide basic information about your survey
-        </p>
+        </TextSmall>
       </div>
 
       {/* Title */}
-      <div>
-        <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-          Survey Title <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
+      <div className="mb-6">
+        <Input
           id="title"
+          label="Survey Title"
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
           placeholder="Enter survey title"
-          className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
           required
         />
       </div>
 
       {/* Description */}
-      <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-          Description
-        </label>
-        <textarea
+      <div className="mb-6">
+        <Textarea
           id="description"
+          label="Description"
           value={description}
           onChange={(e) => onDescriptionChange(e.target.value)}
           placeholder="Briefly describe your survey"
           rows={3}
-          className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors resize-none"
         />
       </div>
 
       {/* Objective */}
       <div>
-        <label htmlFor="objective" className="block text-sm font-medium text-gray-700 mb-2">
-          Objective / Purpose
-        </label>
-        <textarea
+        <Textarea
           id="objective"
+          label="Objective / Purpose"
           value={objective}
           onChange={(e) => onObjectiveChange(e.target.value)}
-          placeholder="What do you hope to gather from this survey?"
+          placeholder="What do you hope to learn from this survey?"
           rows={2}
-          className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors resize-none"
         />
       </div>
-    </div>
+    </Card>
   )
 }

@@ -62,9 +62,9 @@ export function ReviewSurveyPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="page-gradient min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <div className="spinner-primary spinner-lg mx-auto mb-4"></div>
           <p className="text-gray-600">Loading survey...</p>
         </div>
       </div>
@@ -73,9 +73,9 @@ export function ReviewSurveyPage() {
 
   if (!survey) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="page-gradient min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
             Survey not found
           </h2>
           <button
@@ -90,13 +90,13 @@ export function ReviewSurveyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="page-gradient min-h-screen">
       {/* Header */}
-      <header className="bg-white shadow">
+      <header className="page-header">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-gray-900">Review Survey</h1>
-            <span className="px-3 py-1 text-sm font-medium bg-yellow-100 text-yellow-800 rounded">
+            <span className="badge-warning">
               {survey.status}
             </span>
           </div>
@@ -105,7 +105,7 @@ export function ReviewSurveyPage() {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-xl shadow-lg p-8">
+        <div className="card-gradient backdrop-blur-sm bg-gradient-to-br from-white/90 via-blue-50/50 to-white/90 shadow-strong border border-white/50 rounded-2xl p-8">
           {/* Survey Preview */}
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -206,10 +206,10 @@ export function ReviewSurveyPage() {
           </div>
 
           {/* Info Box */}
-          <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="mt-6 bg-green-50/80 backdrop-blur-sm border border-green-200/50 rounded-xl p-4">
             <div className="flex">
               <svg
-                className="h-5 w-5 text-green-400 mr-2"
+                className="h-5 w-5 text-green-500 mr-2 flex-shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"

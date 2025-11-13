@@ -133,15 +133,15 @@ export function CreateSurveyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="page-gradient min-h-screen">
       {/* Header */}
-      <header className="bg-white shadow">
+      <header className="page-header">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">Create New Survey</h1>
           <button
             type="button"
             onClick={() => navigate('/surveys')}
-            className="text-sm text-gray-600 hover:text-gray-900"
+            className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
           >
             Cancel
           </button>
